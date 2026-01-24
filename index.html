@@ -1,24 +1,67 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      #startButton {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 999;
+        padding: 20px 40px;
+        font-size: 18px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      #startButton:hover {
+        background: #45a049;
+      }
+      .hidden { display: none; }
+    </style>
   </head>
   <body>
-    <a-scene embedded arjs="patternRatio:0.80" vr-mode-ui="enabled: false">
+    <button id="startButton">Start AR Experience</button>
+    
+    <a-scene 
+      embedded 
+      arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; patternRatio: 0.90;" 
+      vr-mode-ui="enabled: false"
+      renderer="logarithmicDepthBuffer: true;">
+      
       <a-assets>
         <video
           id="video"
-          src="https://github.com/naganaveen33/marker-tracking/blob/main/assets/videos/lv_0_20250111230939%20(1).mp4"
+          src="https://raw.githubusercontent.com/naganaveen33/marker-tracking/main/assets/videos/lv_0_20250111230939%20(1).mp4"
+          preload="auto"
+          crossorigin="anonymous"
+          playsinline
+          webkit-playsinline
         ></video>
-        <image
+        <img
           id="thumbnail"
-          src="https://github.com/naganaveen33/marker-tracking/blob/main/assets/images/background.JPG"
-        ></image>
+          src="https://raw.githubusercontent.com/naganaveen33/marker-tracking/main/assets/images/background.JPG"
+          crossorigin="anonymous"
+        />
       </a-assets>
+      
       <a-marker
         type="pattern"
-        url="https://github.com/naganaveen33/marker-tracking/blob/main/assets/models/pattern-new%20logo.patt"
+        url="https://raw.githubusercontent.com/naganaveen33/marker-tracking/main/assets/models/pattern-new%20logo.patt"
+        id="marker"
+        emitevents="true"
+        smooth="true"
+        smoothCount="10"
+        smoothTolerance="0.01"
+        smoothThreshold="5"
       >
         <a-video
           id="arVideo"
@@ -29,6 +72,7 @@
           rotation="-90 0 0"
           visible="false"
         ></a-video>
+        
         <a-image
           id="thumbnailImg"
           src="#thumbnail"
@@ -39,18 +83,70 @@
           visible="true"
         ></a-image>
       </a-marker>
-      <a-entity camera cursor="fuse: false; rayOrigin: mouse;"></a-entity>
+      
+      <a-entity camera></a-entity>
     </a-scene>
+
     <script>
-      window.addEventListener("click", () => {
-        const video = document.getElementById("video");
-        const arVideo = document.getElementById("arVideo");
-        const thumbnailImg = document.getElementById("thumbnailImg");
+      let started = false;
+      const startButton = document.getElementById('startButton');
+      const video = document.getElementById('video');
+      const arVideo = document.getElementById('arVideo');
+      const thumbnailImg = document.getElementById('thumbnailImg');
+      const marker = document.getElementById('marker');
 
-        thumbnailImg.setAttribute("visible", false);
-        arVideo.setAttribute("visible", true);
+      // Start AR experience
+      startButton.addEventListener('click', async () => {
+        startButton.classList.add('hidden');
+        started = true;
+        
+        // Try to load and prepare video
+        try {
+          await video.load();
+          console.log('Video loaded successfully');
+        } catch (error) {
+          console.error('Error loading video:', error);
+        }
+      });
 
-        video.play();
+      // Marker found - show thumbnail
+      marker.addEventListener('markerFound', () => {
+        console.log('Marker found!');
+        thumbnailImg.setAttribute('visible', 'true');
+      });
+
+      // Marker lost - stop video
+      marker.addEventListener('markerLost', () => {
+        console.log('Marker lost!');
+        if (video.paused === false) {
+          video.pause();
+          thumbnailImg.setAttribute('visible', 'true');
+          arVideo.setAttribute('visible', 'false');
+        }
+      });
+
+      // Click to play video when marker is visible
+      document.addEventListener('click', () => {
+        if (started && thumbnailImg.getAttribute('visible') === 'true') {
+          thumbnailImg.setAttribute('visible', 'false');
+          arVideo.setAttribute('visible', 'true');
+          
+          video.play().catch(error => {
+            console.error('Error playing video:', error);
+            // Fallback: show thumbnail again if video fails
+            thumbnailImg.setAttribute('visible', 'true');
+            arVideo.setAttribute('visible', 'false');
+          });
+        }
+      });
+
+      // Debug: Log when video is ready
+      video.addEventListener('loadeddata', () => {
+        console.log('Video ready to play');
+      });
+
+      video.addEventListener('error', (e) => {
+        console.error('Video error:', e);
       });
     </script>
   </body>
