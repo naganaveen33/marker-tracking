@@ -27,9 +27,10 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: auto !important;
-            height: 100% !important;
+            width: 100vw !important;
+            height: 100vh !important;
             max-width: none !important;
+            object-fit: cover !important;
         }
         #debug {
             position: fixed;
@@ -97,9 +98,9 @@
     <a-scene
         id="arScene"
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 640; sourceHeight: 480; displayWidth: 640; displayHeight: 480; videoTexture: true;"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; videoTexture: true; maxDetectionRate: 60; canvasWidth: 1280; canvasHeight: 720;"
         vr-mode-ui="enabled: false"
-        renderer="logarithmicDepthBuffer: true; precision: medium;"
+        renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
     >
         <a-assets timeout="10000">
             <video
@@ -123,9 +124,10 @@
             preset="hiro"
             emitevents="true"
             smooth="true"
-            smoothCount="5"
+            smoothCount="10"
             smoothTolerance="0.01"
-            smoothThreshold="2"
+            smoothThreshold="5"
+            raycaster="objects: .clickable"
         >
             <a-video
                 id="arVideo"
@@ -190,7 +192,7 @@
 
         function toggleDebug() {
             debugMode = !debugMode;
-            elements.scene.setAttribute('arjs', `sourceType: webcam; debugUIEnabled: ${debugMode}; detectionMode: mono_and_matrix; sourceWidth: 640; sourceHeight: 480; displayWidth: 640; displayHeight: 480; videoTexture: true;`);
+            elements.scene.setAttribute('arjs', `sourceType: webcam; debugUIEnabled: ${debugMode}; detectionMode: mono_and_matrix; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; videoTexture: true; maxDetectionRate: 60; canvasWidth: 1280; canvasHeight: 720;`);
             updateStatus('Debug mode: ' + (debugMode ? 'ON' : 'OFF'));
         }
 
