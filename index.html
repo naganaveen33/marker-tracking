@@ -2,51 +2,14 @@
 <html>
   <head>
     <title>WebAR Lion NFT Demo</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <style>
-      #loadingStatus {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.9);
-        color: white;
-        padding: 20px;
-        border-radius: 10px;
-        font-family: Arial;
-        z-index: 10000;
-        text-align: center;
-      }
-      .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3498db;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 10px auto;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    </style>
   </head>
   <body style="margin: 0; overflow: hidden">
-    
-    <div id="loadingStatus">
-      <div class="spinner"></div>
-      <p id="statusText">Initializing AR...</p>
-    </div>
-
     <a-scene
       mindar-image="imageTargetSrc: ./assets/lion_image.mind; filterMinCF: 0.0001; filterBeta: 0.001;"
       vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: true"
-      renderer="precision: medium; antialias: true;">
-      
+      device-orientation-permission-ui="enabled: true">
       <a-assets>
         <a-asset-item id="lionModel" src="./assets/lion_3d.glb"></a-asset-item>
       </a-assets>
@@ -70,50 +33,5 @@
         Point your camera at the lion target image to see the 3D model appear!
       </p>
     </div>
-
-    <script>
-      const statusText = document.getElementById('statusText');
-      const loadingStatus = document.getElementById('loadingStatus');
-      
-      // Track loading progress
-      const scene = document.querySelector('a-scene');
-      
-      scene.addEventListener('loaded', () => {
-        statusText.textContent = 'Loading 3D model...';
-      });
-
-      scene.addEventListener('renderstart', () => {
-        statusText.textContent = 'Requesting camera access...';
-      });
-
-      // Hide loading screen when AR is ready
-      document.addEventListener('DOMContentLoaded', () => {
-        scene.addEventListener('arReady', () => {
-          console.log('AR Ready!');
-          loadingStatus.style.display = 'none';
-        });
-
-        scene.addEventListener('arError', (event) => {
-          console.error('AR Error:', event);
-          statusText.textContent = 'Error: ' + (event.detail || 'Failed to initialize AR');
-        });
-      });
-
-      // Timeout fallback - hide after 15 seconds
-      setTimeout(() => {
-        if (loadingStatus.style.display !== 'none') {
-          console.warn('Loading timeout - forcing hide');
-          loadingStatus.style.display = 'none';
-        }
-      }, 15000);
-
-      // Check for file loading errors
-      window.addEventListener('error', (e) => {
-        console.error('Resource loading error:', e);
-        if (e.filename && e.filename.includes('lion')) {
-          statusText.textContent = 'Error: Cannot load lion files. Check file paths!';
-        }
-      }, true);
-    </script>
   </body>
 </html>
