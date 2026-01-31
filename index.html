@@ -2,14 +2,172 @@
 <html>
   <head>
     <title>WebAR Lion NFT Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+      }
+      
+      #scanOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.5s;
+      }
+      
+      #scanOverlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .scan-container {
+        text-align: center;
+        max-width: 90%;
+      }
+      
+      .scan-title {
+        color: white;
+        font-size: 24px;
+        margin-bottom: 30px;
+        font-weight: 300;
+        letter-spacing: 1px;
+      }
+      
+      .target-preview {
+        position: relative;
+        width: 280px;
+        height: 280px;
+        margin: 0 auto 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+      }
+      
+      .target-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        opacity: 0.4;
+        filter: blur(1px);
+      }
+      
+      .scan-animation {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(76, 175, 80, 0.8) 50%, 
+          transparent 100%);
+        animation: scan 2s ease-in-out infinite;
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+      }
+      
+      @keyframes scan {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(277px); }
+        100% { transform: translateY(0); }
+      }
+      
+      .scan-instruction {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 16px;
+        margin-top: 20px;
+      }
+      
+      .loading-dots {
+        display: inline-block;
+        margin-left: 5px;
+      }
+      
+      .loading-dots span {
+        animation: blink 1.4s infinite;
+        animation-fill-mode: both;
+      }
+      
+      .loading-dots span:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      
+      .loading-dots span:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      
+      @keyframes blink {
+        0%, 80%, 100% { opacity: 0; }
+        40% { opacity: 1; }
+      }
+      
+      .status-indicator {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(76, 175, 80, 0.9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 14px;
+        z-index: 10000;
+        display: none;
+      }
+      
+      .status-indicator.active {
+        display: block;
+        animation: pulse 2s infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+    </style>
   </head>
-  <body style="margin: 0; overflow: hidden">
+  <body>
+    
+    <!-- Scan Overlay -->
+    <div id="scanOverlay">
+      <div class="scan-container">
+        <h2 class="scan-title">Scan the Image</h2>
+        <div class="target-preview">
+          <!-- Replace with your actual target image path -->
+          <img src="./assets/lion_target.jpg" alt="Target" class="target-image" onerror="this.style.display='none'">
+          <div class="scan-animation"></div>
+        </div>
+        <p class="scan-instruction">
+          Point your camera at this image
+          <span class="loading-dots">
+            <span>.</span><span>.</span><span>.</span>
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Status Indicator -->
+    <div id="statusIndicator" class="status-indicator">
+      ✓ Target Found
+    </div>
+
     <a-scene
-      mindar-image="imageTargetSrc: ./assets/lion_image.mind; filterMinCF: 0.0001; filterBeta: 0.001;"
+      mindar-image="imageTargetSrc: ./assets/lion_image.mind; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 5;"
       vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: true">
+      device-orientation-permission-ui="enabled: true"
+      renderer="colorManagement: true; sortObjects: true;">
+      
       <a-assets>
         <a-asset-item id="lionModel" src="./assets/lion_3d.glb"></a-asset-item>
       </a-assets>
@@ -26,12 +184,56 @@
         </a-gltf-model>
       </a-entity>
     </a-scene>
-    
-    <div style="position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 15px; border-radius: 5px; font-family: Arial; z-index: 1000; max-width: 300px;">
-      <h3 style="margin: 0 0 10px 0;">🦁 Lion AR Tracker</h3>
-      <p style="margin: 0; font-size: 14px;">
-        Point your camera at the lion target image to see the 3D model appear!
-      </p>
-    </div>
+
+    <script>
+      const scanOverlay = document.getElementById('scanOverlay');
+      const statusIndicator = document.getElementById('statusIndicator');
+      const sceneEl = document.querySelector('a-scene');
+      
+      let arStarted = false;
+      let targetFound = false;
+
+      // Hide overlay when AR is ready
+      sceneEl.addEventListener('arReady', () => {
+        console.log('AR System Ready');
+        arStarted = true;
+      });
+
+      // Handle target found/lost
+      const targetEl = document.querySelector('[mindar-image-target]');
+      
+      targetEl.addEventListener('targetFound', () => {
+        console.log('Target Found!');
+        targetFound = true;
+        scanOverlay.classList.add('hidden');
+        statusIndicator.classList.add('active');
+      });
+      
+      targetEl.addEventListener('targetLost', () => {
+        console.log('Target Lost');
+        targetFound = false;
+        scanOverlay.classList.remove('hidden');
+        statusIndicator.classList.remove('active');
+      });
+
+      // Fallback: Hide overlay after camera starts (15 seconds max)
+      setTimeout(() => {
+        if (!targetFound && arStarted) {
+          console.log('Timeout - assuming camera is ready');
+          // Keep overlay visible until target is actually found
+        }
+      }, 15000);
+
+      // Error handling
+      window.addEventListener('error', (e) => {
+        console.error('Error loading resources:', e);
+        if (e.message && e.message.includes('404')) {
+          alert('Error: Could not load AR files. Please check that lion_image.mind and lion_3d.glb are in the assets folder.');
+        }
+      }, true);
+
+      // Log loading progress
+      console.log('Initializing AR experience...');
+    </script>
   </body>
 </html>
